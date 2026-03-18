@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<title>Browser RPG</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #111;
+  color: #eee;
+  display: flex;
+  height: 100vh;
+}
+
+/* BAL PANEL – STATOK */
+#stats {
+  width: 250px;
+  background: #1a1a1a;
+  padding: 15px;
+  border-right: 2px solid #333;
+}
+
+/* KÖZÉP – JÁTÉKTÉR (placeholder) */
+#main {
+  flex: 1;
+  padding: 20px;
+}
+
+/* JOBB PANEL – NAV */
+#menu {
+  width: 250px;
+  background: #1a1a1a;
+  padding: 15px;
+  border-left: 2px solid #333;
+}
+
+/* STAT BLOKK */
+.stat {
+  margin-bottom: 8px;
+}
+
+/* GOMBOK */
+button {
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 10px;
+  background: #333;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #555;
+}
+</style>
+</head>
+
+<body>
+
+<!-- STAT PANEL -->
+<div id="stats">
+  <h3>[Gertrude/Warrior/1]</h3>
+
+  <div class="stat">XP: 10/100</div>
+  <div class="stat">RP: 5</div>
+  <div class="stat">HP: 20/60</div>
+  <div class="stat">EN: 15/40</div>
+
+  <hr>
+
+  <div class="stat">ST: 5</div>
+  <div class="stat">DX: 4</div>
+  <div class="stat">AG: 3</div>
+  <div class="stat">KN: 2</div>
+  <div class="stat">CR: 1%</div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+  <h2>Játéktér</h2>
+  <p>Itt jelenik meg majd a tartalom (questek, harc stb.)</p>
+</div>
+
+<!-- NAV PANEL -->
+<div id="menu">
+  <button onclick="openMenu('character')">[character]</button>
+  <button onclick="openMenu('inventory')">[inventory]</button>
+  <button onclick="openMenu('storage')">[storage]</button>
+  <button onclick="openMenu('quest')">[quest]</button>
+  <button onclick="openMenu('mine')">[mine]</button>
+  <button onclick="openMenu('arena')">[arena]</button>
+  <button onclick="openMenu('pvp')">[PvP rank]</button>
+  <button onclick="openMenu('pve')">[PvE rank]</button>
+  <button onclick="openMenu('clan')">[clan]</button>
+  <button onclick="openMenu('message')">[message]</button>
+</div>
+
+<script>
+function openMenu(type) {
+  document.getElementById("main").innerHTML =
+    "<h2>" + type + "</h2><p>Tartalom betöltése...</p>";
+}
+</script>
+
+</body>
+</html>
