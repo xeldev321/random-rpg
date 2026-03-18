@@ -76,16 +76,24 @@ button:hover { background: #555; }
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc }
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// 🔴 IDE MÁSOLD BE A SAJÁT CONFIGOD
+// 🔑 Firebase config (a tiéd marad!)
 const firebaseConfig = {
   apiKey: "AIzaSyBiT3zelFo_R-AVhWWiP6xQI9jt1JzE3h0",
   authDomain: "noxerion-rpg.firebaseapp.com",
   projectId: "noxerion-rpg"
 };
 
+// 🔌 1. app létrehozás
 const app = initializeApp(firebaseConfig);
+
+// 🔐 2. auth
 const auth = getAuth(app);
+
+// 🧠 3. adatbázis
+const db = getFirestore(app);
 
 let player = {};
 
@@ -107,14 +115,26 @@ window.login = function() {
   let password = document.getElementById("password").value;
 
   signInWithEmailAndPassword(auth, email, password)
-    .then(() => {
-      startGame();
+    .then(async (userCredential) => {
+
+      const user = userCredential.user;
+
+      const docRef = doc(db, "players", user.uid);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        player = docSnap.data();
+        startGame();
+      } else {
+        showRoles();
+      }
+
     })
     .catch(() => alert("Hibás adat"));
 }
 
 // ROLE
-function showRoles() {
+window.showRoles = function() {
   document.getElementById("main").innerHTML = `
     <h2>Válassz kasztot</h2>
 
@@ -132,17 +152,25 @@ function showRoles() {
   `;
 }
 
-function selectRole(role) {
+window.selectRole = function(role) {
   player.role = role;
 
   document.getElementById("main").innerHTML = `
     <input id="name" placeholder="Karakter név"><br><br>
-    <button onclick="start()">Start</button>
+    <button onclick="finishRegister()">Start</button>
   `;
 }
 
-window.start = function() {
+window.finishRegister = async function() {
   player.name = document.getElementById("name").value;
+
+  const user = auth.currentUser;
+
+  await setDoc(doc(db, "players", user.uid), {
+    name: player.name,
+    role: player.role
+  });
+
   startGame();
 }
 
@@ -160,7 +188,7 @@ function startGame() {
   document.getElementById("stats").style.display = "block";
 }
 
-function openMenu(type){
+window.openMenu = function(type){
   document.getElementById("main").innerHTML = "<h2>"+type+"</h2>";
 }
 
