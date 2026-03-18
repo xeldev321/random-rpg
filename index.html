@@ -62,6 +62,7 @@ button:hover {
 
 <!-- STAT PANEL -->
 <div id="stats">
+  <img id="avatar" src="assets/characters/warrior.png" style="width:100%; margin-bottom:10px;">
   <h3>[Gertrude/Warrior/1]</h3>
 
   <div class="stat">XP: 10/100</div>
@@ -80,30 +81,107 @@ button:hover {
 
 <!-- MAIN -->
 <div id="main">
-  <h2>Játéktér</h2>
-  <p>Itt jelenik meg majd a tartalom (questek, harc stb.)</p>
-</div>
+  <h2>Login / Register</h2>
+  
+  <input id="username" placeholder="Username"><br><br>
+  <input id="password" type="password" placeholder="Password"><br><br>
 
-<!-- NAV PANEL -->
-<div id="menu">
-  <button onclick="openMenu('character')">[character]</button>
-  <button onclick="openMenu('inventory')">[inventory]</button>
-  <button onclick="openMenu('storage')">[storage]</button>
-  <button onclick="openMenu('quest')">[quest]</button>
-  <button onclick="openMenu('mine')">[mine]</button>
-  <button onclick="openMenu('arena')">[arena]</button>
-  <button onclick="openMenu('pvp')">[PvP rank]</button>
-  <button onclick="openMenu('pve')">[PvE rank]</button>
-  <button onclick="openMenu('clan')">[clan]</button>
-  <button onclick="openMenu('message')">[message]</button>
+  <button onclick="login()">Login</button>
+  <button onclick="register()">Register</button>
 </div>
 
 <script>
-function openMenu(type) {
-  document.getElementById("main").innerHTML =
-    "<h2>" + type + "</h2><p>Tartalom betöltése...</p>";
-}
-</script>
 
-</body>
-</html>
+let player = null;
+
+// AUTO LOGIN
+window.onload = () => {
+  let saved = localStorage.getItem("player");
+  if (saved) {
+    player = JSON.parse(saved);
+    startGame();
+  }
+};
+
+function register() {
+  let username = document.getElementById("username").value;
+  let password = document.getElementById("password").value;
+
+  if (!username || !password) {
+    alert("Tölts ki mindent");
+    return;
+  }
+
+  player = {
+    username,
+    password,
+    role: null,
+    name: null
+  };
+
+  showRoleSelection();
+}
+
+function login() {
+  let saved = JSON.parse(localStorage.getItem("player"));
+
+  if (!saved) {
+    alert("Nincs regisztrált user");
+    return;
+  }
+
+  let username = document.getElementById("username").value;
+  let password = document.getElementById("password").value;
+
+  if (username === saved.username && password === saved.password) {
+    player = saved;
+    startGame();
+  } else {
+    alert("Hibás adatok");
+  }
+}
+
+function showRoleSelection() {
+  document.getElementById("main").innerHTML = `
+    <h2>Válassz kasztot</h2>
+
+    <img src="assets/characters/warrior.png" onclick="selectRole('warrior')" width="100">
+    <img src="assets/characters/mage.png" onclick="selectRole('mage')" width="100">
+    <img src="assets/characters/rogue.png" onclick="selectRole('rogue')" width="100">
+  `;
+}
+
+function selectRole(role) {
+  player.role = role;
+
+  document.getElementById("main").innerHTML = `
+    <h2>Karakter név</h2>
+    <input id="charName" placeholder="Name">
+    <button onclick="finishRegister()">Start</button>
+  `;
+}
+
+function finishRegister() {
+  let name = document.getElementById("charName").value;
+
+  if (!name) {
+    alert("Adj meg nevet");
+    return;
+  }
+
+  player.name = name;
+
+  localStorage.setItem("player", JSON.stringify(player));
+
+  startGame();
+}
+
+function startGame() {
+  document.getElementById("main").innerHTML =
+    "<h2>Üdv, " + player.name + "!</h2>";
+
+  document.querySelector("#stats h3").innerText =
+    "[" + player.name + "/" + player.role + "/1]";
+}
+
+</script>
