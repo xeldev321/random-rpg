@@ -2,7 +2,7 @@
 <html lang="hu">
 <head>
 <meta charset="UTF-8">
-<title>Browser RPG</title>
+<title>RPG</title>
 
 <style>
 body {
@@ -14,37 +14,24 @@ body {
   height: 100vh;
 }
 
-/* BAL PANEL – STATOK */
-#stats {
+#stats, #menu {
   width: 250px;
   background: #1a1a1a;
   padding: 15px;
-  border-right: 2px solid #333;
 }
 
-/* KÖZÉP – JÁTÉKTÉR (placeholder) */
+#stats { border-right: 2px solid #333; }
+#menu { border-left: 2px solid #333; }
+
 #main {
   flex: 1;
   padding: 20px;
+  text-align: center;
 }
 
-/* JOBB PANEL – NAV */
-#menu {
-  width: 250px;
-  background: #1a1a1a;
-  padding: 15px;
-  border-left: 2px solid #333;
-}
-
-/* STAT BLOKK */
-.stat {
-  margin-bottom: 8px;
-}
-
-/* GOMBOK */
 button {
   width: 100%;
-  margin-bottom: 8px;
+  margin-top: 10px;
   padding: 10px;
   background: #333;
   color: white;
@@ -52,102 +39,96 @@ button {
   cursor: pointer;
 }
 
-button:hover {
-  background: #555;
-}
+button:hover { background: #555; }
+
+.role { cursor:pointer; }
 </style>
 </head>
 
 <body>
 
-<!-- STAT PANEL -->
+<!-- BAL -->
 <div id="stats">
-  <img id="avatar" src="assets/characters/warrior.png" style="width:100%; margin-bottom:10px;">
-  <h3>[Gertrude/Warrior/1]</h3>
-
-  <div class="stat">XP: 10/100</div>
-  <div class="stat">RP: 5</div>
-  <div class="stat">HP: 20/60</div>
-  <div class="stat">EN: 15/40</div>
-
-  <hr>
-
-  <div class="stat">ST: 5</div>
-  <div class="stat">DX: 4</div>
-  <div class="stat">AG: 3</div>
-  <div class="stat">KN: 2</div>
-  <div class="stat">CR: 1%</div>
+  <img id="avatar" src="assets/characters/warrior.png" style="width:100%">
+  <h3>[---/---/1]</h3>
 </div>
 
-<!-- MAIN -->
+<!-- KÖZÉP -->
 <div id="main">
   <h2>Login / Register</h2>
-  
-  <input id="username" placeholder="Username"><br><br>
-  <input id="password" type="password" placeholder="Password"><br><br>
+
+  <input id="email" placeholder="Email"><br><br>
+  <input id="password" type="password" placeholder="Password"><br>
 
   <button onclick="login()">Login</button>
   <button onclick="register()">Register</button>
 </div>
 
-<script>
+<!-- JOBB -->
+<div id="menu" style="display:none;">
+  <button onclick="openMenu('character')">character</button>
+  <button onclick="openMenu('inventory')">inventory</button>
+</div>
 
-let player = null;
+<!-- 🔥 EGYETLEN SCRIPT -->
+<script type="module">
 
-// AUTO LOGIN
-window.onload = () => {
-  let saved = localStorage.getItem("player");
-  if (saved) {
-    player = JSON.parse(saved);
-    startGame();
-  }
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword }
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+// 🔴 IDE MÁSOLD BE A SAJÁT CONFIGOD
+const firebaseConfig = {
+  apiKey: "AIzaSyBiT3zelFo_R-AVhWWiP6xQI9jt1JzE3h0",
+  authDomain: "noxerion-rpg.firebaseapp.com",
+  projectId: "noxerion-rpg"
 };
 
-function register() {
-  let username = document.getElementById("username").value;
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+let player = {};
+
+// REGISTER
+window.register = function() {
+  let email = document.getElementById("email").value;
   let password = document.getElementById("password").value;
 
-  if (!username || !password) {
-    alert("Tölts ki mindent");
-    return;
-  }
-
-  player = {
-    username,
-    password,
-    role: null,
-    name: null
-  };
-
-  showRoleSelection();
+  createUserWithEmailAndPassword(auth, email, password)
+    .then(() => {
+      showRoles();
+    })
+    .catch(e => alert(e.message));
 }
 
-function login() {
-  let saved = JSON.parse(localStorage.getItem("player"));
-
-  if (!saved) {
-    alert("Nincs regisztrált user");
-    return;
-  }
-
-  let username = document.getElementById("username").value;
+// LOGIN
+window.login = function() {
+  let email = document.getElementById("email").value;
   let password = document.getElementById("password").value;
 
-  if (username === saved.username && password === saved.password) {
-    player = saved;
-    startGame();
-  } else {
-    alert("Hibás adatok");
-  }
+  signInWithEmailAndPassword(auth, email, password)
+    .then(() => {
+      startGame();
+    })
+    .catch(() => alert("Hibás adat"));
 }
 
-function showRoleSelection() {
+// ROLE
+function showRoles() {
   document.getElementById("main").innerHTML = `
     <h2>Válassz kasztot</h2>
 
-    <img src="assets/characters/warrior.png" onclick="selectRole('warrior')" width="100">
-    <img src="assets/characters/mage.png" onclick="selectRole('mage')" width="100">
-    <img src="assets/characters/rogue.png" onclick="selectRole('rogue')" width="100">
+    <div style="display:flex; justify-content:center; gap:40px;">
+      <div class="role" onclick="selectRole('warrior')">
+        <img src="assets/characters/warrior.png" width="120"><br>Warrior
+      </div>
+      <div class="role" onclick="selectRole('mage')">
+        <img src="assets/characters/mage.png" width="120"><br>Mage
+      </div>
+      <div class="role" onclick="selectRole('rogue')">
+        <img src="assets/characters/rogue.png" width="120"><br>Rogue
+      </div>
+    </div>
   `;
 }
 
@@ -155,33 +136,34 @@ function selectRole(role) {
   player.role = role;
 
   document.getElementById("main").innerHTML = `
-    <h2>Karakter név</h2>
-    <input id="charName" placeholder="Name">
-    <button onclick="finishRegister()">Start</button>
+    <input id="name" placeholder="Karakter név"><br><br>
+    <button onclick="start()">Start</button>
   `;
 }
 
-function finishRegister() {
-  let name = document.getElementById("charName").value;
-
-  if (!name) {
-    alert("Adj meg nevet");
-    return;
-  }
-
-  player.name = name;
-
-  localStorage.setItem("player", JSON.stringify(player));
-
+window.start = function() {
+  player.name = document.getElementById("name").value;
   startGame();
 }
 
+// GAME
 function startGame() {
   document.getElementById("main").innerHTML =
-    "<h2>Üdv, " + player.name + "!</h2>";
+    "<h2>Üdv " + (player.name || "Player") + "</h2>";
 
-  document.querySelector("#stats h3").innerText =
-    "[" + player.name + "/" + player.role + "/1]";
+  if(player.role){
+    document.getElementById("avatar").src =
+      "assets/characters/" + player.role + ".png";
+  }
+
+  document.getElementById("menu").style.display = "block";
+}
+
+function openMenu(type){
+  document.getElementById("main").innerHTML = "<h2>"+type+"</h2>";
 }
 
 </script>
+
+</body>
+</html>
