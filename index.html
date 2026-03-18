@@ -42,18 +42,53 @@ button {
 button:hover { background: #555; }
 
 .role { cursor:pointer; }
+
+#charInfo { text-align: center; margin-top: 10px; }
+#charName { font-size: 18px; font-weight: bold; }
+#charRole { font-size: 14px; color: #aaa; }
+#charLevel { font-size: 13px; color: #888; }
+
+#xpContainer {
+  width: 100%;
+  height: 12px;
+  background: #333;
+  margin-top: 10px;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+#xpBar {
+  height: 100%;
+  width: 0%;
+  background: limegreen;
+}
+
+#xpText {
+  font-size: 12px;
+  color: #aaa;
+  text-align: center;
+  margin-top: 3px;
+}
 </style>
 </head>
 
 <body>
 
-<!-- BAL -->
 <div id="stats" style="display:none;">
   <img id="avatar" src="assets/characters/warrior.png" style="width:100%">
-  <h3>[---/---/1]</h3>
+
+  <div id="charInfo">
+    <div id="charName">---</div>
+    <div id="charRole">---</div>
+    <div id="charLevel">level 1</div>
+
+    <div id="xpContainer">
+      <div id="xpBar"></div>
+    </div>
+    <div id="xpText">0 / 100</div>
+  </div>
 </div>
 
-<!-- KÖZÉP -->
 <div id="main">
   <h2>Login / Register</h2>
 
@@ -64,13 +99,14 @@ button:hover { background: #555; }
   <button onclick="register()">Register</button>
 </div>
 
-<!-- JOBB -->
 <div id="menu" style="display:none;">
   <button onclick="openMenu('character')">character</button>
   <button onclick="openMenu('inventory')">inventory</button>
+
+  <!-- TEST XP -->
+  <button onclick="addXP(50)">+50 XP</button>
 </div>
 
-<!-- 🔥 EGYETLEN SCRIPT -->
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -79,23 +115,45 @@ from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// 🔑 Firebase config (a tiéd marad!)
 const firebaseConfig = {
   apiKey: "AIzaSyBiT3zelFo_R-AVhWWiP6xQI9jt1JzE3h0",
   authDomain: "noxerion-rpg.firebaseapp.com",
   projectId: "noxerion-rpg"
 };
 
-// 🔌 1. app létrehozás
 const app = initializeApp(firebaseConfig);
-
-// 🔐 2. auth
 const auth = getAuth(app);
-
-// 🧠 3. adatbázis
 const db = getFirestore(app);
 
 let player = {};
+
+// XP LOGIKA
+function getRequiredXP(level) {
+  return Math.floor(100 * Math.pow(level, 1.5));
+}
+
+window.addXP = async function(amount) {
+  player.xp += amount;
+
+  let required = getRequiredXP(player.level);
+
+  while (player.xp >= required) {
+    player.xp -= required;
+    player.level++;
+    required = getRequiredXP(player.level);
+  }
+
+  updateUI();
+  await savePlayer();
+}
+
+// SAVE
+async function savePlayer() {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  await setDoc(doc(db, "players", user.uid), player);
+}
 
 // REGISTER
 window.register = function() {
@@ -103,9 +161,7 @@ window.register = function() {
   let password = document.getElementById("password").value;
 
   createUserWithEmailAndPassword(auth, email, password)
-    .then(() => {
-      showRoles();
-    })
+    .then(() => showRoles())
     .catch(e => alert(e.message));
 }
 
@@ -117,10 +173,7 @@ window.login = function() {
   signInWithEmailAndPassword(auth, email, password)
     .then(async (userCredential) => {
 
-      const user = userCredential.user;
-
-      const docRef = doc(db, "players", user.uid);
-      const docSnap = await getDoc(docRef);
+      const docSnap = await getDoc(doc(db, "players", userCredential.user.uid));
 
       if (docSnap.exists()) {
         player = docSnap.data();
@@ -137,7 +190,6 @@ window.login = function() {
 window.showRoles = function() {
   document.getElementById("main").innerHTML = `
     <h2>Válassz kasztot</h2>
-
     <div style="display:flex; justify-content:center; gap:40px;">
       <div class="role" onclick="selectRole('warrior')">
         <img src="assets/characters/warrior.png" width="120"><br>Warrior
@@ -163,29 +215,40 @@ window.selectRole = function(role) {
 
 window.finishRegister = async function() {
   player.name = document.getElementById("name").value;
+  player.level = 1;
+  player.xp = 0;
 
-  const user = auth.currentUser;
-
-  await setDoc(doc(db, "players", user.uid), {
-    name: player.name,
-    role: player.role
-  });
-
+  await savePlayer();
   startGame();
 }
 
 // GAME
 function startGame() {
-  document.getElementById("main").innerHTML =
-    "<h2>Üdv " + (player.name || "Player") + "</h2>";
 
-  if(player.role){
-    document.getElementById("avatar").src =
-      "assets/characters/" + player.role + ".png";
-  }
+  document.getElementById("main").innerHTML =
+    "<h2>Üdv " + player.name + "</h2>";
+
+  document.getElementById("avatar").src =
+    "assets/characters/" + player.role + ".png";
 
   document.getElementById("menu").style.display = "block";
   document.getElementById("stats").style.display = "block";
+
+  updateUI();
+}
+
+// UI
+function updateUI() {
+  document.getElementById("charName").innerText = player.name;
+  document.getElementById("charRole").innerText = player.role;
+  document.getElementById("charLevel").innerText = "level " + player.level;
+
+  const required = getRequiredXP(player.level);
+  const percent = (player.xp / required) * 100;
+
+  document.getElementById("xpBar").style.width = percent + "%";
+  document.getElementById("xpText").innerText =
+    player.xp + " / " + required;
 }
 
 window.openMenu = function(type){
